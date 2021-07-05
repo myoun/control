@@ -4,7 +4,6 @@ import io.github.monun.kommand.kommand
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
-import org.yaml.snakeyaml.Yaml
 import java.io.File
 
 class ControlPlugin : JavaPlugin() {
@@ -57,6 +56,7 @@ class ControlPlugin : JavaPlugin() {
         setupControls()
     }
 
+    @Suppress("UNUSED")
     fun resetPlayerControl(player: Player) {
         controlConfig.set(player.uniqueId.toString(),null)
         save(controlConfig,controlFile)
