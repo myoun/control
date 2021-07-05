@@ -1,0 +1,10 @@
+main : kr.myoung2.control.ControlPlugin
+name : control
+version : 1.0.0
+api-version: 1.17
+libraries:
+  - io.github.monun:kommand:1.2.1
+
+commands:
+  control:
+    permission: 'control'
