@@ -8,72 +8,86 @@ import io.github.monun.kommand.argument.suggest
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import org.bukkit.permissions.Permission
 
 object ControlCommand {
 
     private lateinit var plugin:ControlPlugin
 
-    internal fun register(plugin:ControlPlugin, builder:KommandDispatcherBuilder) {
+    internal fun register(plugin:ControlPlugin,builder: KommandDispatcherBuilder) {
         this.plugin = plugin
         builder.register("control") {
-            require {
-                if (it.isOp)
-                    true
-                else it.hasPermission("control")
+            // Get
+            require {it.hasPermission(Permission("control.get"))}
+            then("get") {
+                then("player" to PlayerArgument) {
+                    then("control" to ControlArgument) {
+                        executes {
+                            val sender = it.sender
+                            val player = it.parseArgument<Player>("player")
+                            val control = it.parseArgument<Control<*>>("control")
+
+                            sender.sendColorMessage("${player.name}'s ${control.name} value : ${plugin.getControl(player,control)}",ChatColor.GOLD)
+                        }
+                    }
+                }
             }
-            then("player" to PlayerArgument) {
-                then("control") {
+            // Set
+            require { it.hasPermission(Permission("control.set")) }
+            then("set") {
+                then("player" to PlayerArgument) {
                     then("control" to ControlArgument) {
                         then("value" to ValueArgument) {
                             executes {
+                                val sender = it.sender
                                 val player = it.parseArgument<Player>("player")
                                 val control = it.parseArgument<Control<*>>("control")
                                 val value = it.parseArgument<Any>("value")
+                                plugin.unsafeControl(player, control, value)
+                                sender.sendColorMessage("Changed ${player.name}'s ${control.name} value to $value",ChatColor.GOLD)
+                            }
+                        }
+                    }
+                }
+            }
+            // Reset
+            require { it.hasPermission(Permission("control.reset")) }
+            then("reset") {
+                then ("everyone") {
+                    then("control" to ControlArgument) {
+                        executes {
+                            val sender = it.sender
+                            val control = it.parseArgument<Control<*>>("control")
+                            plugin.resetEverySpecificControl(control)
+                            sender.sendColorMessage("Reset Every ${control.name} control",ChatColor.GOLD)
+                        }
+                    }
+                    executes {
+                        plugin.resetEveryControl()
+                        it.sender.sendColorMessage("Reset Every control",ChatColor.GOLD)
+                    }
+                }
+                then("player") {
+                    then("player" to PlayerArgument) {
+                        then("control" to ControlArgument) {
+                            executes {
                                 val sender = it.sender
-                                plugin.unsafeControl(player,control,value)
-                                sender.sendColorMessage("Player : ${player.name}\nControl : ${control.name}\nValue : $value",ChatColor.GOLD)
+                                val player = it.parseArgument<Player>("player")
+                                val control = it.parseArgument<Control<*>>("control")
+                                plugin.resetPlayerSpecificControl(player,control)
+                                sender.sendColorMessage("Reset ${player.name}'s ${control.name}",ChatColor.GOLD)
                             }
                         }
                         executes {
                             val sender = it.sender
                             val player = it.parseArgument<Player>("player")
-                            val control = it.parseArgument<Control<*>>("control")
-                            sender.sendColorMessage("${player.name}'s ${control.name} value : ${plugin.getControl(player,control)}",ChatColor.GOLD)
+                            plugin.resetPlayerControl(player)
+                            sender.sendColorMessage("Reset ${player.name}",ChatColor.GOLD)
                         }
-
-                    }
-                }
-                then("reset") {
-                    executes {
-                        plugin.resetEveryControl()
-                    }
-                }
-            }
-/*
-        [Not Active]
-            then("everyone" to EveryoneArgument) {
-                then("control") {
-                    then("control" to ControlArgument) {
-                        then("value" to ValueArgument) {
-                            executes {
-                                val control = it.parseArgument<Control<*>>("control")
-                                val value = it.parseArgument<Any>("value")
-                                val sender = it.sender
-                                for (player in plugin.server.onlinePlayers) {
-                                    plugin.unsafeControl(player, control, value)
-                                }
-                            }
-                        }
-                    }
-                }
-                then ("reset") {
-                    executes {
-                        plugin.resetEveryControl()
                     }
                 }
             }
 
- */
         }
     }
 
@@ -89,14 +103,18 @@ object ControlCommand {
         }
     }
 
-    object ValueArgument : KommandArgument<Boolean> {
+    object ValueArgument : KommandArgument<Any> {
 
-        override fun parse(context: KommandContext, param: String): Boolean? {
-            return when(param) {
-                "true" -> true
-                "false" -> false
-                else -> null
-            }
+        override fun parse(context: KommandContext, param: String): Any? {
+            return if (context.parseOrNullArgument<Control<*>>("control")?.default is Boolean) {
+                when(param) {
+                    "true" -> true
+                    "false" -> false
+                    else -> null
+                }
+            } else if (context.parseOrNullArgument<Control<*>>("control")?.default is String) {
+                param
+            } else null
         }
 
         override fun suggest(context: KommandContext, target: String): Collection<String> {

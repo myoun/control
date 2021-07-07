@@ -3,6 +3,7 @@ package kr.myoung2.control
 import io.github.monun.kommand.kommand
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
+import org.bukkit.permissions.Permission
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 
@@ -11,8 +12,11 @@ class ControlPlugin : JavaPlugin() {
     private var controlFile:File = File(dataFolder,"control.yml")
     private var controlConfig:YamlConfiguration = YamlConfiguration()
 
+
+    // Setup
     override fun onEnable() {
         load(controlConfig,controlFile)
+        setupPermissions()
         setupCommands()
         setupControls()
         server.pluginManager.registerEvents(EventListener(this),this)
@@ -40,30 +44,29 @@ class ControlPlugin : JavaPlugin() {
             }
         }
     }
+    fun setupPermissions() {
+        server.pluginManager.addPermission(Permission("control.get"))
+        server.pluginManager.addPermission(Permission("control.set"))
+        server.pluginManager.addPermission(Permission("control.reset"))
+
+    }
+
+    // Control
+
+    // Set Control
 
     fun unsafeControl(player: Player,control: Control<*>,value:Any?) {
         controlConfig.set(player.controlName(control),value)
     }
+    private fun setDefaultControl(player:Player, control: Control<*>) {
+        unsafeControl(player,control,control.default)
+    }
+
+    // Get Control
 
     fun getControl(player: Player,control: Control<*>) : Any? {
         return controlConfig.get(player.controlName(control))
     }
-
-    fun resetEveryControl() {
-        controlConfig = YamlConfiguration()
-        save(controlConfig,controlFile)
-        load(controlConfig,controlFile)
-        setupControls()
-    }
-
-    @Suppress("UNUSED")
-    fun resetPlayerControl(player: Player) {
-        controlConfig.set(player.uniqueId.toString(),null)
-        save(controlConfig,controlFile)
-        load(controlConfig,controlFile)
-        setupControls()
-    }
-
     fun checkFirstTime(player: Player) : Boolean {
         return if (controlConfig.contains(player.uniqueId.toString())) {
             true
@@ -72,6 +75,28 @@ class ControlPlugin : JavaPlugin() {
                 unsafeControl(player,value,value.default)
             }
             false
+        }
+    }
+
+    // ResetControl
+
+    fun resetEveryControl() {
+        controlConfig = YamlConfiguration()
+        save(controlConfig,controlFile)
+        load(controlConfig,controlFile)
+        setupControls()
+    }
+    fun resetPlayerControl(player: Player) {
+        for (control in Control.controls) {
+            setDefaultControl(player,control)
+        }
+    }
+    fun resetPlayerSpecificControl(player: Player,control: Control<*>) {
+        setDefaultControl(player,control)
+    }
+    fun resetEverySpecificControl(control:Control<*>) {
+        for (player in server.onlinePlayers) {
+            resetPlayerSpecificControl(player,control)
         }
     }
 }

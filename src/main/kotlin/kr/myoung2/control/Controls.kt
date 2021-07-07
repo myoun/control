@@ -17,9 +17,6 @@ sealed class Control<T>(val name:String, val type: KClass<*>, val default:T) {
     object DEATH : Control<Boolean>("death",Boolean::class,true)
     object PICK : Control<Boolean>("pick",Boolean::class,true)
 
-
-
-
     companion object {
         val controls:ArrayList<Control<*>> = arrayListOf(
             CHAT,
