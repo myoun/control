@@ -123,17 +123,6 @@ object ControlCommand {
             return if (type == (Boolean::class)) listOf("true","false") else emptyList()
         }
     }
-
-    object EveryoneArgument : KommandArgument<Collection<Player>> {
-        override fun parse(context: KommandContext, param: String): Collection<Player> {
-            return plugin.server.onlinePlayers
-        }
-
-        override fun suggest(context: KommandContext, target: String): Collection<String> {
-            return listOf("everyone")
-        }
-    }
-
 }
 
 fun CommandSender.sendColorMessage(message:String,color:ChatColor) {
