@@ -1,4 +1,5 @@
 # Control
+[![CodeFactor](https://www.codefactor.io/repository/github/myoun/control/badge)](https://www.codefactor.io/repository/github/myoun/control)<br/>
 Minecraft Paper Plugin for Server Admin
 
 ## ❓ How To Use
